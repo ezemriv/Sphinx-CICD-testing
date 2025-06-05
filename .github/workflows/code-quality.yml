@@ -1,0 +1,11 @@
+name: Python Code Quality
+on: [push]
+
+jobs:
+
+  lock_file:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: uv sync --locked --all-extras --dev # uv lock --locked (old with errors)
