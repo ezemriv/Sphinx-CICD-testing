@@ -1,3 +1,8 @@
+Sphinx CI/CD Test Documentation
+===============================
+
+This is a test project for generating documentation automatically using **Sphinx** and deploying it via **GitHub Actions** CI/CD pipeline.
+
 Getting Started
 ===============
 
