@@ -1,3 +1,4 @@
+## MINIMAL SETUP TEST
 name: Publish Sphinx Docs
 
 on:
@@ -15,13 +16,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup  # installs uv
 
-      - name: Install docs dependencies
-        run: uv sync --locked --extra docs
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv and sync docs dependencies
+        run: |
+          pip install uv
+          uv sync --extra docs
 
       - name: Build Sphinx Docs
-        run: uv run sphinx-build -b html docs/source docs/_build/html
+        run: |
+          mkdir -p docs/_build/html
+          uv run sphinx-build -b html docs/source docs/_build/html
+
+      - name: Debug list built HTML files
+        run: ls -R docs/_build/html
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -34,9 +45,49 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Debug --> list built HTML files
-        run: ls -R docs/_build/html
+      - id: deployment
+        uses: actions/deploy-pages@v3
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+
+# name: Publish Sphinx Docs
+
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
+
+# permissions:
+#   contents: read
+#   pages: write
+#   id-token: write
+
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: ./.github/actions/setup  # installs uv
+
+#       - name: Install docs dependencies
+#         run: uv sync --locked --extra docs
+
+#       - name: Build Sphinx Docs
+#         run: uv run sphinx-build -b html docs/source docs/_build/html
+
+#       - uses: actions/upload-pages-artifact@v3
+#         with:
+#           path: docs/_build/html
+
+#   deploy:
+#     needs: build
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: github-pages
+#       url: ${{ steps.deployment.outputs.page_url }}
+#     steps:
+#       - name: Debug --> list built HTML files
+#         run: ls -R docs/_build/html
+
+#       - name: Deploy to GitHub Pages
+#         id: deployment
+#         uses: actions/deploy-pages@v4
