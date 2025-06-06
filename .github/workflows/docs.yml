@@ -2,7 +2,7 @@ name: Publish Sphinx Docs
 
 on:
   push:
-    branches: [main]      # or your default branch
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup  # your composite action (installs uv)
+      - uses: ./.github/actions/setup  # installs uv
 
       - name: Install docs dependencies
         run: uv sync --locked --extra docs
@@ -34,10 +34,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-
       - name: Debug --> list built HTML files
         run: ls -R docs/_build/html
 
       - name: Deploy to GitHub Pages
-      - id: deployment
+        id: deployment
         uses: actions/deploy-pages@v4
