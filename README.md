@@ -1,6 +1,8 @@
 # Sphinx-CICD-testing
 
-Project initiated with `uv init --lib`
+[See Deployed Documentation in Github Pages](https://ezemriv.github.io/Sphinx-CICD-testing/)
+
+Note: Project initiated with `uv init --lib`
 
 ---
 
@@ -156,9 +158,7 @@ This project auto-builds and deploys Sphinx docs to **GitHub Pages** on every pu
 
 #### 🔒 Enable GitHub Pages
 
-1. Go to your repo’s **Settings → Pages**:
-   [https://github.com/\*\*\\](https://github.com/**\)\<your-username>**/**\<your-repo>\*\*/settings/pages
-
+1. Go to your repo’s **Settings → Pages**
 2. Under **Build and deployment**, set:
 
    * **Source**: `GitHub Actions`
@@ -176,30 +176,24 @@ name: Publish Sphinx Docs
 
 on:
   push:
-    branches: [main]  # or your default branch
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: write     # allow Pages deployment
+  id-token: write  # allow OIDC token for deploy
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # Installs Python, uv, and caches dependencies (custom action)
-      - uses: ./.github/actions/setup
-
-      - name: Install docs dependencies
-        run: uv sync --locked --extra docs
-
-      - name: Build Sphinx Docs
-        run: uv run sphinx-build -b html docs/source docs/_build/html
-
-      - uses: actions/upload-pages-artifact@v3
+      - uses: ./.github/actions/setup         # installs Python + uv
+      - run: uv sync --locked --extra docs    # install doc deps
+      - run: |
+          uv run sphinx-build -b html docs/source docs/_build/html
+      - uses: actions/upload-pages-artifact@v3 # upload built HTML to Pages Artifact
         with:
           path: docs/_build/html
 
@@ -211,7 +205,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v3
+        uses: actions/deploy-pages@v4 # deploy to GitHub Pages
 ```
 
 ---

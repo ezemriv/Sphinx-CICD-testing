@@ -19,7 +19,7 @@ jobs:
       - run: uv sync --locked --extra docs    # install doc deps
       - run: |
           uv run sphinx-build -b html docs/source docs/_build/html
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3 # upload built HTML to Pages Artifact
         with:
           path: docs/_build/html
 
@@ -31,4 +31,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v4 # deploy to GitHub Pages
