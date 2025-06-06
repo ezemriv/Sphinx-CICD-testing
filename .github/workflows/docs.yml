@@ -7,27 +7,18 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: write     # allow Pages deployment
+  id-token: write  # allow OIDC token for deploy
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup  # installs uv
-
-      - name: Install docs dependencies
-        run: uv sync --locked --extra docs # installs dependencies
-
-      - name: Build Sphinx Docs
-        run: |
-          mkdir -p docs/_build/html
+      - uses: ./.github/actions/setup         # installs Python + uv
+      - run: uv sync --locked --extra docs    # install doc deps
+      - run: |
           uv run sphinx-build -b html docs/source docs/_build/html
-
-      - name: Debug list built HTML files
-        run: ls -R docs/_build/html
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
@@ -39,9 +30,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Debug list built HTML files
-        run: ls -R docs/_build/html
-
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
