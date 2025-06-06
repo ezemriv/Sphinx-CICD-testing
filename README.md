@@ -1,19 +1,39 @@
 # Sphinx-CICD-testing
 
+Project initiated with `uv init --lib`
 
-Initiated with `uv init --lib`
+---
 
-uv add sphinx --optional docs
-uv run sphinx-quickstart docs
+## 📚 Local Setup with Sphinx
 
-## Manual sphinx execution:
+This project uses **Sphinx** + **uv** for building and serving documentation.
+
+### 🔧 1. Install Docs Dependencies
+
+Use [uv](https://github.com/astral-sh/uv) to sync the `docs` extra from `pyproject.toml`:
+
 ```bash
-uv add sphinx --optional docs
-uv run sphinx-quickstart docs
-uv run sphinx-build -M html docs/source/ docs/build/
+uv sync --extra docs
 ```
 
-## Complex exec (chatgpt):
+Your `pyproject.toml` should include:
+
+```toml
+[project.optional-dependencies]
+docs = [
+  "sphinx>=7",
+  "sphinx-rtd-theme",
+  "sphinx-autodoc-typehints",
+  "sphinx-copybutton",
+  "sphinx-autobuild"
+]
+```
+
+---
+
+### 🏗️ 2. Create the `docs/` Folder (if starting fresh)
+
+If this is a new project:
 
 ```bash
 mkdir docs
@@ -21,31 +41,143 @@ cd docs
 uv run sphinx-quickstart -p sphinxcicdtesting -a ER -v 0.1 -r 0.1 -l en --sep --ext-autodoc --makefile
 ```
 
-- Inside `docs/conf.py`:
+Then manually create:
 
-```python
-import importlib.metadata as md, os, sys, pathlib
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
-project  = "emrpy"
-release  = md.version("emrpy")
-html_theme = "furo"
-```
-
-Add any `.md` or `.rst` pages you like—`index.rst` is the entry point.
+* `docs/source/getting-started.rst`
+* `docs/source/api/modules.rst`
 
 ---
 
-## 3 — Create a **docs.yml** workflow
+### ⚙️ 3. Minimal `conf.py` Configuration
+
+Located at `docs/source/conf.py`:
+
+```python
+import os, sys, importlib.metadata as md
+sys.path.insert(0, os.path.abspath('../../src'))
+
+project = 'your_project_name'
+author = 'Your Name'
+release = md.version("your_project_name")  # requires project to be installable
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints"
+]
+
+autosummary_generate = True
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+}
+
+html_theme = "sphinx_rtd_theme"
+```
+
+---
+
+### 🧱 4. Minimal Structure for Pages
+
+#### `index.rst`
+
+```rst
+your_project_name documentation
+===============================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   getting-started
+   api/modules
+```
+
+#### `getting-started.rst`
+
+```rst
+Getting Started
+===============
+
+Install:
+
+.. code-block:: bash
+
+   pip install your_project_name
+
+Usage:
+
+.. code-block:: python
+
+   from your_project_name import something
+```
+
+#### `api/modules.rst`
+
+```rst
+API Reference
+=============
+
+.. autosummary::
+   :toctree: _generated
+   :recursive:
+
+   your_project_name
+```
+
+---
+
+### 🚀 5. Build Docs Locally
+
+```bash
+uv run sphinx-build -b html docs/source docs/_build/html
+```
+
+Open `docs/_build/html/index.html` in your browser to view the output.
+
+---
+
+### 🔁 6. Live Preview with Auto-Reload
+
+```bash
+uv run sphinx-autobuild docs/source docs/_build/html --open-browser --port 8000
+```
+
+---
+
+## 🚀 Deploying Documentation via GitHub Actions
+
+This project auto-builds and deploys Sphinx docs to **GitHub Pages** on every push to `main`.
+
+---
+
+### ✅ 1. Required GitHub Setup
+
+#### 🔒 Enable GitHub Pages
+
+1. Go to your repo’s **Settings → Pages**:
+   [https://github.com/\*\*\\](https://github.com/**\)\<your-username>**/**\<your-repo>\*\*/settings/pages
+
+2. Under **Build and deployment**, set:
+
+   * **Source**: `GitHub Actions`
+
+3. Click **Save** even if it looks correct.
+
+---
+
+### 🛠️ 2. GitHub Actions Workflow
+
+Save this file as `.github/workflows/docs.yml`:
 
 ```yaml
-# .github/workflows/docs.yml
-name: Build & Publish Docs
+name: Publish Sphinx Docs
 
 on:
   push:
-    branches: [main]          # build on every push to main
-  workflow_dispatch:          # manual trigger
-  pull_request:               # verify docs build on PRs (no deploy)
+    branches: [main]  # or your default branch
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -53,77 +185,44 @@ permissions:
   id-token: write
 
 jobs:
-  build-docs:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Re-use your composite action that installs uv + caching
+      # Installs Python, uv, and caches dependencies (custom action)
       - uses: ./.github/actions/setup
 
-      # Install doc dependencies
-      - run: uv sync --extras docs --locked
+      - name: Install docs dependencies
+        run: uv sync --locked --extra docs
 
-      # Build HTML
-      - run: sphinx-build -b html docs docs/_build/html
+      - name: Build Sphinx Docs
+        run: uv run sphinx-build -b html docs/source docs/_build/html
 
-      # Upload the HTML artefact so the deploy job can pick it up
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
-  # Only deploy from the default branch, never from PRs
-  deploy-docs:
-    needs: build-docs
-    if: github.event_name != 'pull_request'
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
     steps:
       - id: deployment
         uses: actions/deploy-pages@v3
 ```
 
-### Why two jobs?
-
-* **build-docs** verifies that Sphinx can build on every PR (similar to tests).
-* **deploy-docs** publishes only from `main`, giving you confidence that docs never break production.
-
 ---
 
-## 4 — Where are the docs published?
+### 📘 3. After Your First Push
 
-With the new GitHub Pages infrastructure, the HTML ends up on
+* A deployment will trigger automatically.
+* The documentation will be available at:
 
-```
-https://<org—or-user>.github.io/<repo>/
-```
+  ```
+  https://<your-username>.github.io/<your-repo>/
+  ```
 
-When the first deployment finishes, GitHub posts a link in the *Actions → deploy-docs* summary and in **Settings → Pages**. You can also set a custom domain there if you have one.
-
----
-
-## 5 — Local preview (optional)
-
-Developers can still preview docs locally:
-
-```bash
-uv sync --extras docs  # one-off
-sphinx-autobuild docs docs/_build/html
-# open http://127.0.0.1:8000
-```
-
----
-
-### Integration summary
-
-* **No manual viewing required:** every push to `main` automatically publishes updated docs.
-* **Full CI visibility:** PRs fail fast if Sphinx can’t build.
-* **UV everywhere:** keeps lock-file fidelity and consistent environments.
-* **GitHub Pages:** free hosting, zero extra services.
-
-That’s it—you now have living documentation generated straight from the codebase and served automatically.
+You’ll also see the live URL under **Settings → Pages** after the first deployment.

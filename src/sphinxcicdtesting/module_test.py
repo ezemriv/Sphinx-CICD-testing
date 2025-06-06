@@ -2,7 +2,7 @@ def dummy_function(arg1, arg2, arg3, kwarg1=None, kwarg2=True):
     """
     A dummy function for testing Sphinx documentation.
 
-    Parameters:
+    **Parameters:**
     arg1 (int): The first argument, an integer value.
     arg2 (str): The second argument, a string value.
     arg3 (list): The third argument, a list of items.
